@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GEC INNOVATION STRATEGY</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  </head>
+<body>
+  <div id="splash-screen">
+    <div class="splash-content">
+      <div class="splash-text">GEC INNOVATION STRATEGY</div>
+      <div class="loading-container">
+        <div class="loading-bar"></div>
+        <div class="loading-text">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <a href="#main-content" class="sr-only-focusable">Vai al contenuto</a>
+  <header role="banner">
+    <h1>GEC INNOVATION STRATEGY</h1>
+  </header>
+  <main id="main-content" role="main" class="container">
+    <section class="portfolio-section" aria-labelledby="titolo-portafoglio">
+      <div class="portfolio-chart" id="portfolio-chart"></div>
+      <div class="portfolio-table-container" aria-labelledby="titolo-portafoglio">
+        <h2 id="titolo-portafoglio">Composizione Portafoglio (23 Apr 2025)</h2>
+        <table class="portfolio-table">
+          <thead>
+            <tr><th>COMPONENT</th><th>WEIGHT</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>LYXOR NASDAQ 100 DAILY LEV<br><span class="symbol">LQQ FP Equity</span></td><td>26,48%</td></tr>
+            <tr><td>MicroStrategy Inc.<br><span class="symbol">MSTR UQ Equity</span></td><td>12,64%</td></tr>
+            <tr><td>Tesla, Inc.<br><span class="symbol">TSLA UQ Equity</span></td><td>11,74%</td></tr>
+            <tr><td>NVIDIA Corp.<br><span class="symbol">NVDA UQ Equity</span></td><td>11,50%</td></tr>
+            <tr><td>Amazon.com, Inc.<br><span class="symbol">AMZN UQ Equity</span></td><td>11,23%</td></tr>
+            <tr><td>Alphabet Inc. (Class A)<br><span class="symbol">GOOG UQ Equity</span></td><td>11,13%</td></tr>
+            <tr><td>Meta Platforms, Inc.<br><span class="symbol">META UQ Equity</span></td><td>10,90%</td></tr>
+            <tr><td>MARA Holdings, Inc.<br><span class="symbol">MARA UQ Equity</span></td><td>2,19%</td></tr>
+            <tr><td>Riot Platforms, Inc.<br><span class="symbol">RIOT UQ Equity</span></td><td>1,64%</td></tr>
+            <tr><td>Novavax, Inc.<br><span class="symbol">NVAX UQ Equity</span></td><td>0,57%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section class="grid" id="stocks-grid" aria-label="Dashboard titoli"></section>
+  </main>
+  <footer role="contentinfo" class="timestamp">
+    <div>Dati iniziali aggiornati al: <time datetime="2025-04-23T21:02:00+02:00">23 Apr 2025 ~21:02 CEST</time><span class="live-badge" role="status" aria-live="polite">LIVE</span></div>
+    
+  </footer>
+  <script>
+    const stocks = [
+      { name: 'Bitcoin', symbol: 'BTCUSD', price: 0, change: 0, history: [] },
+      { name: 'MicroStrategy', symbol: 'MSTR', price: 340.50, change: 8.63, logo: 'https://companiesmarketcap.com/img/company-logos/64/MSTR.webp', history: [] },
+      { name: 'Nasdaq 100', symbol: 'NDX', price: 16785.65, change: 3.06, logo: 'https://companiesmarketcap.com/img/company-logos/64/NDAQ.webp', history: [] },
+      { name: 'S&P 500', symbol: 'GSPC', price: 5357.72, change: 2.51, logo: 'https://companiesmarketcap.com/img/company-logos/64/SPGI.webp', history: [] },
+      { name: 'Apple Inc', symbol: 'AAPL', price: 204.88, change: 2.57, logo: 'https://companiesmarketcap.com/img/company-logos/64/AAPL.webp', history: [] },
+      { name: 'Microsoft', symbol: 'MSFT', price: 375.85, change: 2.46, logo: 'https://companiesmarketcap.com/img/company-logos/64/MSFT.webp', history: [] },
+      { name: 'NVIDIA', symbol: 'NVDA', price: 103.34, change: 4.50, logo: 'https://companiesmarketcap.com/img/company-logos/64/NVDA.webp', history: [] },
+      { name: 'Tesla Inc', symbol: 'TSLA', price: 188.45, change: 1.15, logo: 'https://companiesmarketcap.com/img/company-logos/64/TSLA.webp', history: [] }
+    ];
+
+    async function fetchBtcHistory() {
+      const res = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=20');
+      const data = await res.json(); return data.map(c => parseFloat(c[4]));
+    }
+    async function fetchQuote(sym) {
+      if (sym === 'BTCUSD') {
+        const res = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT');
+        const d = await res.json(); return { price: parseFloat(d.lastPrice), change: parseFloat(d.priceChangePercent) };
+      }
+      const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${sym}&apikey=CQVQXP15O3V5YHP6`;
+      const r = await fetch(url); const j = await r.json();
+      const p = parseFloat(j['Global Quote']['05. price']);
+      const pc = parseFloat(j['Global Quote']['08. previous close'] || p);
+      return { price: p, change: ((p - pc) / pc) * 100 };
+    }
+    function generateHistory(base, volatility) {
+      let arr = [], v = base;
+      for (let i = 0; i < 20; i++) { arr.unshift(v); v = Math.max(0, v - (Math.random()-0.5)*volatility*(base/50)); }
+      return arr.map((x,i) => x + (Math.random()-0.5)*(volatility/5)*(i/20));
+    }
+    // inizializzazione history per non-BTC
+    stocks.forEach(s => { if (s.symbol!=='BTCUSD') s.history = generateHistory(s.price, s.price*0.05); });
+    const chartInstances = {};
+
+    function createChart(container, history, change) {
+      const pos = change>=0;
+      const opts = {
+        chart:{type:'line',sparkline:{enabled:true},animations:{enabled:true,easing:'linear',speed:300},background:'transparent',toolbar:{show:false},zoom:{enabled:false}},
+        stroke:{width:3,curve:'smooth',colors:[pos?'#00C853':'#FF1744']},
+        fill:{type:'gradient',gradient:{shadeIntensity:0.3,opacityFrom:0.6,opacityTo:0,stops:[0,100],colorStops:[{offset:0,color:pos?'rgba(0,200,83,0.4)':'rgba(255,23,68,0.4)',opacity:0.6},{offset:100,color:pos?'rgba(0,200,83,0)':'rgba(255,23,68,0)',opacity:0}]}},
+        series:[{ data: history, name: 'Andamento Prezzo' }], // Added name for the series
+        xaxis:{labels:{show:false},axisBorder:{show:false},axisTicks:{show:false},tooltip:{enabled:false}},
+        yaxis:{show:false,min:Math.min(...history)*0.98,max:Math.max(...history)*1.02},
+        grid:{show:false,padding:{left:0,right:0,top:0,bottom:0}},
+        tooltip:{enabled:true,theme:'dark',y:{formatter:v=>`$${v.toFixed(2)}`},x:{show:false}},
+        markers:{size:0}
+      }; ApexCharts.exec(container.id,'destroy'); const chart=new ApexCharts(container,opts); chart.render(); return chart;
+    }
+    function createStockCard(stock) {
+      const card=document.createElement('div'); card.className='stock-card'; card.setAttribute('data-symbol',stock.symbol);
+      const id=`chart-${stock.symbol}`;
+      const logoContent=stock.symbol==='BTCUSD'?'₿':`<img src="${stock.logo}" class="stock-logo" alt="Logo ${stock.name}">`;
+      card.innerHTML=
+        `<div class="stock-header"><div class="logo-container">${logoContent}</div><div class="stock-info"><div class="stock-name">${stock.name}</div><div class="stock-symbol">${stock.symbol}</div></div></div>`+
+        `<div class="price-container"><div class="price" tabindex="0">${stock.price.toFixed(2)}</div>`+
+        `<div class="change ${stock.change>=0?'positive':'negative'}">${stock.change>=0?'▲':'▼'} ${stock.change.toFixed(2)}%</div></div>`+
+        `<div class="chart-wrapper"><div class="chart-container" id="${id}"></div></div>`;
+      return {card,id};
+    }
+    function updateTimestamp() {
+      const t=document.querySelector('footer time[datetime]'); if(t) t.textContent=new Date().toLocaleTimeString('it-IT');
+    }
+    function renderStocks() {
+      const grid=document.getElementById('stocks-grid'); grid.innerHTML='';
+      stocks.forEach(s=>{ const {card,id}=createStockCard(s); grid.appendChild(card); chartInstances[id]=createChart(document.getElementById(id),s.history,s.change);} ); updateTimestamp();
+    }
+    let idx=0;
+    async function rotateFetch() {
+      try {
+        const sym=stocks[idx].symbol;
+        const {price,change}=await fetchQuote(sym);
+        const st=stocks.find(x=>x.symbol===sym);
+        st.price=price; st.change=change; st.history.push(price); st.history.shift();
+        const chart=chartInstances[`chart-${sym}`];
+        chart.updateOptions({ stroke:{colors:[change>=0?'#00C853':'#FF1744']}, fill:{gradient:{colorStops:[{offset:0,color:change>=0?'rgba(0,200,83,0.4)':'rgba(255,23,68,0.4)',opacity:0.6},{offset:100,color:change>=0?'rgba(0,200,83,0)':'rgba(255,23,68,0)',opacity:0}]}}, yaxis:{min:Math.min(...st.history)*0.98,max:Math.max(...st.history)*1.02} });
+        chart.updateSeries([{data:st.history}]);
+        const cardEl=document.querySelector(`.stock-card[data-symbol="${sym}"]`);
+        cardEl.querySelector('.price').textContent=price.toFixed(2);
+        const chEl=cardEl.querySelector('.change'); chEl.className=`change ${change>=0?'positive':'negative'}`; chEl.textContent=`${change>=0?'▲':'▼'} ${change.toFixed(2)}%`;
+        updateTimestamp();
+      } catch(e){ console.error(e);} idx=(idx+1)%stocks.length; setTimeout(rotateFetch,12000);
+    }
+
+    window.addEventListener('load', () => {
+      const splashScreen = document.getElementById('splash-screen');
+      // Avvia l'animazione di uscita dopo un tempo sufficiente per l'animazione della barra (es. 3 secondi per la barra + 1 secondo per la dissolvenza)
+      setTimeout(() => {
+        splashScreen.style.opacity = '0';
+        // Rimuovi l'elemento dopo che l'animazione è completa (la durata deve corrispondere alla durata dell'animazione CSS)
+        splashScreen.addEventListener('transitionend', () => {
+          splashScreen.remove();
+        });
+      }, 3000); // Inizia la dissolvenza dopo 3 secondi
+    });
+
+
+    document.addEventListener('DOMContentLoaded',async()=>{
+      const btcHist=await fetchBtcHistory(); if(btcHist.length){ const b=stocks.find(s=>s.symbol==='BTCUSD'); b.history=btcHist; b.price=btcHist[btcHist.length-1]; b.change=((btcHist[btcHist.length-1]-btcHist[btcHist.length-2])/btcHist[btcHist.length-2])*100; }
+      renderStocks();
+      // Pie chart dati
+      const portfolioData=[
+        {label:'LYXOR NASDAQ 100 DAILY LEV',value:26.48},{label:'MicroStrategy Inc.',value:12.64},{label:'Tesla, Inc.',value:11.74},{label:'NVIDIA Corp.',value:11.50},
+        {label:'Amazon.com, Inc.',value:11.23},{label:'Alphabet Inc. (Class A)',value:11.13},{label:'Meta Platforms, Inc.',value:10.90},{label:'MARA Holdings, Inc.',value:2.19},
+        {label:'Riot Platforms, Inc.',value:1.64},{label:'Novavax, Inc.',value:0.57}
+      ];
+
+      // Define a color palette based on the CSS variables
+      const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+      const primaryDark = getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim();
+      const primaryLight = getComputedStyle(document.documentElement).getPropertyValue('--primary-light').trim();
+      const darkGray = getComputedStyle(document.documentElement).getPropertyValue('--dark-gray').trim();
+      const lightGray = getComputedStyle(document.documentElement).getPropertyValue('--light-gray').trim();
+      const textLight = getComputedStyle(document.documentElement).getPropertyValue('--text-light').trim();
+
+
+      const pieOptions={
+        chart:{
+          type:'donut', // Changed to donut chart
+          width:'100%',
+          height:'100%',
+          background: 'transparent', // Set background to transparent
+        },
+        series:portfolioData.map(d=>d.value),
+        labels:portfolioData.map(d=>d.label),
+         colors: [
+            primaryColor,    // #72ecc3 (Teal)
+            '#5ac69b',       // Primary Darker Teal
+            '#a0f2dc',       // Primary Lighter Teal
+            '#4682B4',       // Steel Blue
+            '#5F9EA0',       // Cadet Blue
+            '#483D8B',       // Dark Slate Blue
+            '#6A5ACD',       // Slate Blue
+            '#7B68EE',       // Medium Slate Blue
+            '#48D1CC',       // Medium Turquoise
+            '#00CED1'        // Dark Turquoise
+        ], // Custom color palette with more variety
+        legend:{
+          position:'bottom',
+          labels: {
+            colors: textLight, // Set legend text color
+          }
+        },
+        dataLabels: {
+            enabled: true,
+            style: {
+                colors: [darkGray] // Set data label color
+            },
+            dropShadow: {
+                enabled: true,
+                top: 1,
+                left: 1,
+                blur: 1,
+                opacity: 0.5
+            }
+        },
+        tooltip: {
+            theme: 'dark', // Use dark tooltip theme
+            y: {
+                formatter: function(val) {
+                  return val + "%" // Add percentage to tooltip
+                }
+            }
+        },
+        responsive:[{
+          breakpoint:480,
+          options:{
+            chart:{
+              width:'100%'
+            },
+            legend:{
+              position:'bottom'
+            }
+          }
+        }]
+      };
+      new ApexCharts(document.getElementById('portfolio-chart'),pieOptions).render();
+      rotateFetch();
+    });
+  </script>
+</body>
+</html>
